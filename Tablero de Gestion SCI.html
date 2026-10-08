@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCI — Tablero de Gestión</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg:#0b0b0d; --surface:#111113; --surface2:#1a1a1e; --border:#2a2a30;
+    --accent:#00D9DC; --danger:#ef4444; --success:#22c55e; --warning:#f59e0b;
+    --text:#fff; --text2:#8a8a8f;
+    --font: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.4;}
+  header.top{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+  .brand{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+  .brand small{display:block;color:var(--text2);font-size:11px;letter-spacing:1px;font-weight:400;margin-top:2px;}
+  .top-actions{display:flex;gap:8px;}
+  nav.tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:2px;padding:0 24px;overflow-x:auto;}
+  nav.tabs button{background:none;border:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;padding:14px 16px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+  nav.tabs button:hover{color:var(--text);}
+  nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent);}
+  main{padding:24px 28px;max-width:1400px;margin:0 auto;}
+  .section{display:none;}
+  .section.active{display:block;}
+  .section-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:7px;border:none;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;white-space:nowrap;}
+  .btn:hover{opacity:.82;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:#555;}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-sm{padding:4px 10px;font-size:12px;}
+  .search-input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 12px;outline:none;min-width:220px;}
+  .search-input:focus{border-color:var(--accent);}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .card .v{font-size:24px;font-weight:700;color:var(--accent);}
+  .card .l{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+  .card.warn .v{color:var(--warning);}
+  .card.bad .v{color:var(--danger);}
+  .alert-box{background:var(--surface);border:1px solid var(--danger);border-radius:10px;padding:14px 18px;margin-bottom:22px;}
+  .alert-box h3{color:var(--danger);font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+  .reminder-box{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:14px 18px;margin-bottom:22px;}
+  .reminder-box h3{color:var(--accent);font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+  .alert-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .alert-item:last-child{border-bottom:none;}
+  .alert-item span.tag{background:rgba(239,68,68,.12);color:var(--danger);font-size:11px;padding:2px 7px;border-radius:4px;margin-right:8px;}
+  table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:10px;overflow:hidden;}
+  thead th{background:var(--surface2);color:var(--text2);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tbody tr:hover{background:var(--surface2);}
+  tr.group-row td{background:var(--surface2);color:var(--accent);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 12px;}
+  tr.subtotal-row td{background:#151519;color:var(--text2);font-size:12px;font-style:italic;}
+  .overdue{color:var(--danger);font-weight:600;}
+  .muted{color:var(--text2);}
+  .row-actions{display:flex;gap:6px;}
+  .empty-state{text-align:center;padding:50px;color:var(--text2);background:var(--surface);border-radius:10px;border:1px dashed var(--border);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;}
+  .modal-title{font-size:16px;font-weight:700;margin-bottom:18px;}
+  .form-group{margin-bottom:14px;}
+  .form-group.checkbox-row{display:flex;align-items:center;gap:8px;}
+  .form-label{display:block;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+  .form-input,select.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:9px 12px;outline:none;}
+  .form-input:focus{border-color:var(--accent);}
+  input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+  .mini-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 8px;outline:none;width:110px;}
+  .mini-input:focus{border-color:var(--accent);}
+  .hito-head,.hito-row{display:grid;grid-template-columns:minmax(170px,2.2fr) 70px minmax(100px,1.2fr) minmax(150px,1.1fr) minmax(150px,1.1fr) 36px;gap:6px;margin-bottom:6px;align-items:center;min-width:700px;}
+  .hito-head span{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+  .hito-row .form-input{padding:7px 8px;font-size:13px;}
+  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+  #toasts{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+  .toast{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:10px 15px;font-size:13px;min-width:220px;animation:fadeUp .2s ease;}
+  .toast.error{border-left-color:var(--danger);}
+  .toast.success{border-left-color:var(--success);}
+  @keyframes fadeUp{from{transform:translateY(8px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .cotiz-durations{font-size:11px;color:var(--text2);margin-top:2px;}
+  .table-wrap{overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">SCI · TABLERO<small>Gestión personal — facturación, cobros, cotizaciones y más</small></div>
+  <div class="top-actions">
+    <button class="btn btn-ghost" onclick="exportBackup()">Exportar respaldo</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">Importar respaldo</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(this.files[0])">
+  </div>
+</header>
+
+<nav class="tabs" id="tabs"></nav>
+
+<main>
+  <div class="section" id="section-resumen"></div>
+  <div class="section" id="section-facturacion"></div>
+  <div class="section" id="section-cotizaciones"></div>
+  <div class="section" id="section-pendientes"></div>
+  <div class="section" id="section-comisiones"></div>
+</main>
+
+<div class="modal-overlay" id="modal-generic">
+  <div class="modal-card">
+    <div class="modal-title" id="gm-title"></div>
+    <div id="gm-fields"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-generic')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGenericForm()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-proyecto">
+  <div class="modal-card" style="max-width:860px">
+    <div class="modal-title" id="pr-title">Proyecto con hitos</div>
+    <div class="form-group"><label class="form-label">Cliente *</label><input type="text" id="pr-cliente" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Nombre del proyecto *</label><input type="text" id="pr-proyecto" class="form-input" placeholder="Ej. Extensión de proyecto"></div>
+    <div class="form-group"><label class="form-label">Monto total del proyecto, sin IVA (opcional: si lo pones, puedes capturar cada hito por %)</label><input type="number" step="0.01" id="pr-total" class="form-input" oninput="prRecalcAll()"></div>
+    <div class="form-group"><label class="form-label">Nota (aplica a todos los hitos)</label><input type="text" id="pr-nota" class="form-input"></div>
+    <div class="hito-head"><span>Hito / concepto</span><span>%</span><span>Monto</span><span>Mes factura</span><span>Mes cobro</span><span></span></div>
+    <div id="pr-hitos"></div>
+    <button class="btn btn-ghost btn-sm" onclick="prAddHito()">+ Agregar otro hito</button>
+    <div class="muted" id="pr-suma" style="margin-top:10px;font-size:13px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-proyecto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProyectoForm()">Guardar hitos</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-cotiz">
+  <div class="modal-card" style="max-width:520px">
+    <div class="modal-title" id="cz-title"></div>
+    <div class="form-group"><label class="form-label">Cliente</label><input type="text" id="cz-cliente" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Proyecto</label><input type="text" id="cz-proyecto" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Monto cotizado (MXN)</label><input type="number" step="0.01" id="cz-monto" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Solicitud recibida</label><input type="date" id="cz-solicitud" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Datos del cliente / costeo interno listo</label><input type="date" id="cz-datosCliente" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Cotización iniciada</label><input type="date" id="cz-iniciada" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Enviada a validación de Enrique</label><input type="date" id="cz-validacionEnrique" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Liberada por Enrique</label><input type="date" id="cz-liberada" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Enviada al cliente</label><input type="date" id="cz-enviada" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Resultado</label>
+      <select id="cz-resultado" class="form-input">
+        <option value="pendiente">Pendiente</option>
+        <option value="aceptada">Aceptada</option>
+        <option value="rechazada">Rechazada</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Fecha de resultado</label><input type="date" id="cz-fechaResultado" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Nota</label><input type="text" id="cz-nota" class="form-input"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cotiz')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCotizForm()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const STORAGE_KEY = 'sci_tablero_gestion_v1';
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+function defaultState(){
+  return {
+    nextId: 100,
+    facturacion: [
+      mkFact(1,'Nestlé','Reingeniería CD Lagos de Moreno','F1 Acta y Planeación',74256,'2026-08','2026-11'),
+      mkFact(2,'Nestlé','Reingeniería CD Lagos de Moreno','Viáticos cotizados',46400,'2026-08','2026-11'),
+      mkFact(3,'Nestlé','Reingeniería CD Lagos de Moreno','F2 Perfilamiento',662056,'2026-08','2026-11'),
+      mkFact(4,'Nestlé','Reingeniería CD Lagos de Moreno','F3 Diseño de escenarios',460056,'2026-09','2026-12'),
+      mkFact(5,'Nestlé','Reingeniería CD Lagos de Moreno','F4 Evaluación financiera',56056,'2026-09','2026-12'),
+      mkFact(6,'Nestlé','Reingeniería CD Lagos de Moreno','F5 Simulación',303812,'2026-10','2027-01'),
+      mkFact(7,'Nestlé','Reingeniería CD Lagos de Moreno','F6 Diseño final',172400,'2026-11','2027-02'),
+      mkFact(8,'Nestlé','Reingeniería CD Lagos de Moreno','F7 Asesoría licitación',152000,'2026-11','2027-02'),
+    ],
+    cotizaciones: [],
+    pendientes: [],
+    comisiones: [],
+  };
+}
+function mkFact(id,cliente,proyecto,concepto,monto,mesFactura,mesCobro,opts){
+  opts = opts || {};
+  return {id, cliente, proyecto, concepto, monto, mesFactura, mesCobro,
+    facturado: !!opts.facturado, fechaFacturado: opts.fechaFacturado || '',
+    numeroFactura: opts.numeroFactura || '',
+    cobrado: !!opts.cobrado, fechaCobrado: opts.fechaCobrado || '',
+    nota: opts.nota || ''};
+}
+
+let state = loadState();
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw){ try { return JSON.parse(raw); } catch(e){} }
+  return defaultState();
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// ── SEED MIGRATIONS ──────────────────────────────────────────────────────
+// Cada vez que se agregan datos reales de un nuevo cliente vía chat, se suma
+// aquí una migración con un id de versión nuevo, para que se apliquen tanto
+// en instalaciones nuevas como en las que ya tenían datos guardados en este equipo.
+const CURRENT_SEED_VERSION = 16;
+function migrateSeeds(){
+  if (state.seedVersion === undefined) state.seedVersion = 0;
+
+  if (state.seedVersion < 1){
+    const zamoraNota = 'Se factura la última semana del mes; cobro la semana siguiente, mismo mes.';
+    const proyCedis = 'Dirección Operativa CEDIS (iguala mensual)';
+    const zamoraRows = [
+      mkFact(150,'Farmacias Zamora',proyCedis,'Iguala — Mayo 2026',120000,'2026-05','2026-05',{facturado:true,fechaFacturado:'2026-05-25',cobrado:true,fechaCobrado:'2026-05-29',nota:zamoraNota}),
+      mkFact(151,'Farmacias Zamora',proyCedis,'Iguala — Junio 2026',120000,'2026-06','2026-06',{facturado:true,fechaFacturado:'2026-06-24',cobrado:true,fechaCobrado:'2026-06-30',nota:zamoraNota}),
+      mkFact(152,'Farmacias Zamora',proyCedis,'Iguala — Julio 2026',120000,'2026-07','2026-07',{facturado:true,fechaFacturado:'2026-07-27',cobrado:true,fechaCobrado:'2026-07-31',nota:zamoraNota}),
+      mkFact(153,'Farmacias Zamora',proyCedis,'Iguala — Agosto 2026',120000,'2026-08','2026-08',{nota:zamoraNota}),
+      mkFact(154,'Farmacias Zamora',proyCedis,'Iguala — Septiembre 2026',120000,'2026-09','2026-09',{nota:zamoraNota}),
+      mkFact(155,'Farmacias Zamora',proyCedis,'Iguala — Octubre 2026',120000,'2026-10','2026-10',{nota:zamoraNota}),
+      mkFact(156,'Farmacias Zamora',proyCedis,'Iguala — Noviembre 2026',120000,'2026-11','2026-11',{nota:zamoraNota}),
+      mkFact(157,'Farmacias Zamora',proyCedis,'Iguala — Diciembre 2026',120000,'2026-12','2026-12',{nota:zamoraNota}),
+      mkFact(158,'Farmacias Zamora','Acompañamiento en implantación WMS','Factura única — implementación WMS',18000,'2026-08','2026-08',{nota:'Proyecto independiente a la iguala de Dirección Operativa CEDIS.'}),
+    ];
+    zamoraRows.forEach(r=>{
+      if (!state.facturacion.some(x=>x.cliente===r.cliente && x.concepto===r.concepto)) state.facturacion.push(r);
+    });
+    state.nextId = Math.max(state.nextId || 100, 200);
+    state.seedVersion = 1;
+  }
+
+  if (state.seedVersion < 2){
+    const snacNota = 'Se factura dentro de los primeros 5 días del mes; pagan el mismo mes, a finales.';
+    const proySnac = 'Venta de licencias (iguala mensual)';
+    const snacRows = [
+      mkFact(250,'SNAC',proySnac,'Iguala — Enero 2026',115000,'2026-01','2026-01',{facturado:true,fechaFacturado:'2026-01-05',cobrado:true,fechaCobrado:'2026-01-30',nota:snacNota}),
+      mkFact(251,'SNAC',proySnac,'Iguala — Febrero 2026',115000,'2026-02','2026-02',{facturado:true,fechaFacturado:'2026-02-05',cobrado:true,fechaCobrado:'2026-02-27',nota:snacNota}),
+      mkFact(252,'SNAC',proySnac,'Iguala — Marzo 2026',115000,'2026-03','2026-03',{facturado:true,fechaFacturado:'2026-03-05',cobrado:true,fechaCobrado:'2026-03-30',nota:snacNota}),
+      mkFact(253,'SNAC',proySnac,'Iguala — Abril 2026',115000,'2026-04','2026-04',{facturado:true,fechaFacturado:'2026-04-05',cobrado:true,fechaCobrado:'2026-04-29',nota:snacNota}),
+      mkFact(254,'SNAC',proySnac,'Iguala — Mayo 2026',115000,'2026-05','2026-05',{facturado:true,fechaFacturado:'2026-05-05',cobrado:true,fechaCobrado:'2026-05-29',nota:snacNota}),
+      mkFact(255,'SNAC',proySnac,'Iguala — Junio 2026',115000,'2026-06','2026-06',{facturado:true,fechaFacturado:'2026-06-05',cobrado:true,fechaCobrado:'2026-06-29',nota:snacNota}),
+      mkFact(256,'SNAC',proySnac,'Iguala — Julio 2026',115000,'2026-07','2026-07',{facturado:true,fechaFacturado:'2026-07-05',cobrado:true,fechaCobrado:'2026-07-30',nota:snacNota}),
+      mkFact(257,'SNAC',proySnac,'Iguala — Agosto 2026',115000,'2026-08','2026-08',{facturado:true,fechaFacturado:'2026-08-03',nota:snacNota}),
+      mkFact(258,'SNAC',proySnac,'Iguala — Septiembre 2026',115000,'2026-09','2026-09',{nota:snacNota}),
+      mkFact(259,'SNAC',proySnac,'Iguala — Octubre 2026',115000,'2026-10','2026-10',{nota:snacNota}),
+      mkFact(260,'SNAC',proySnac,'Iguala — Noviembre 2026',115000,'2026-11','2026-11',{nota:snacNota}),
+    ];
+    snacRows.forEach(r=>{
+      if (!state.facturacion.some(x=>x.cliente===r.cliente && x.concepto===r.concepto)) state.facturacion.push(r);
+    });
+    state.nextId = Math.max(state.nextId || 100, 300);
+    state.seedVersion = 2;
+  }
+
+  if (state.seedVersion < 3){
+    const alarmexNota = 'Fee mensual $1,050 x 36 licencias. Se factura a inicios de mes; pagan casi siempre a fin de mes. Ajustar monto si cambia el número de licencias.';
+    const proyAlarmex = 'Fee mensual licencias (36 licencias)';
+    const alarmexRows = [
+      mkFact(350,'Alarmex',proyAlarmex,'Fee mensual — Julio 2026',37800,'2026-07','2026-07',{facturado:true,fechaFacturado:'2026-07-03',cobrado:true,fechaCobrado:'2026-07-30',nota:alarmexNota}),
+      mkFact(351,'Alarmex',proyAlarmex,'Fee mensual — Agosto 2026',37800,'2026-08','2026-08',{facturado:true,fechaFacturado:'2026-08-04',nota:alarmexNota}),
+      mkFact(352,'Alarmex',proyAlarmex,'Fee mensual — Septiembre 2026',37800,'2026-09','2026-09',{nota:alarmexNota}),
+      mkFact(353,'Alarmex',proyAlarmex,'Fee mensual — Octubre 2026',37800,'2026-10','2026-10',{nota:alarmexNota}),
+      mkFact(354,'Alarmex',proyAlarmex,'Fee mensual — Noviembre 2026',37800,'2026-11','2026-11',{nota:alarmexNota}),
+      mkFact(355,'Alarmex',proyAlarmex,'Fee mensual — Diciembre 2026',37800,'2026-12','2026-12',{nota:alarmexNota}),
+    ];
+    alarmexRows.forEach(r=>{
+      if (!state.facturacion.some(x=>x.cliente===r.cliente && x.concepto===r.concepto)) state.facturacion.push(r);
+    });
+    state.nextId = Math.max(state.nextId || 100, 400);
+    state.seedVersion = 3;
+  }
+
+  if (state.seedVersion < 4){
+    const calNota = 'Se solicita/factura los primeros días del mes; se paga la semana siguiente de enviada, dentro del mismo mes.';
+    const proyCal = 'Implantación Básicos Almacén (iguala mensual)';
+    const calRows = [
+      mkFact(450,'Refaccionarias California',proyCal,'Iguala — Julio 2026',150000,'2026-07','2026-07',{facturado:true,fechaFacturado:'2026-07-03',cobrado:true,fechaCobrado:'2026-07-10',nota:calNota}),
+      mkFact(451,'Refaccionarias California',proyCal,'Iguala — Agosto 2026',150000,'2026-08','2026-08',{facturado:true,fechaFacturado:'2026-08-04',nota:calNota}),
+      mkFact(452,'Refaccionarias California',proyCal,'Iguala — Septiembre 2026',150000,'2026-09','2026-09',{nota:calNota}),
+      mkFact(453,'Refaccionarias California',proyCal,'Iguala — Octubre 2026',150000,'2026-10','2026-10',{nota:calNota}),
+      mkFact(454,'Refaccionarias California',proyCal,'Iguala — Noviembre 2026',150000,'2026-11','2026-11',{nota:calNota}),
+      mkFact(455,'Refaccionarias California',proyCal,'Iguala — Diciembre 2026',150000,'2026-12','2026-12',{nota:calNota}),
+    ];
+    calRows.forEach(r=>{
+      if (!state.facturacion.some(x=>x.cliente===r.cliente && x.concepto===r.concepto)) state.facturacion.push(r);
+    });
+    state.nextId = Math.max(state.nextId || 100, 500);
+    state.seedVersion = 4;
+  }
+
+  if (state.seedVersion < 5){
+    // Unifica Facturación y Cobros en una sola pestaña: Solicitada / Enviada (+ No. factura) / Pagada.
+    // (La conversión de forma de los datos ocurre siempre, más abajo, no solo aquí.)
+    if (state.cobros && state.cobros.length){
+      state.cobros.forEach(c=>{
+        const ym = (c.fechaEsperada||'').slice(0,7);
+        state.facturacion.push({
+          id: state.nextId++, cliente: c.cliente||'', proyecto:'', concepto: c.concepto||'',
+          monto: c.monto||'', mesFactura: ym, mesCobro: ym,
+          solicitada: !!c.cobrado, fechaSolicitada: c.fechaEsperada||'',
+          enviada: !!c.cobrado, fechaEnviada: c.fechaEsperada||'', numeroFactura:'',
+          pagada: !!c.cobrado, fechaPagada: c.fechaCobro||'',
+          nota: 'Migrado desde la pestaña Cobros (ya retirada).',
+        });
+      });
+    }
+    delete state.cobros;
+    state.seedVersion = 5;
+  }
+
+  if (state.seedVersion < 6){
+    const maniNota = 'Pagos contra entregables. Pagan la semana de que se envía la factura.';
+    const proyMani = 'Diseño del CEDIS';
+    const maniRows = [
+      mkFact(550,'Manijauto',proyMani,'Hito 1 — Diagnóstico (40%)',148000,'2026-08','2026-09',{nota:maniNota}),
+      mkFact(551,'Manijauto',proyMani,'Hito 2 — Escenarios (30%)',111000,'2026-10','2026-10',{nota:maniNota}),
+      mkFact(552,'Manijauto',proyMani,'Hito 3 — Cierre (30%)',111000,'2026-11','2026-11',{nota:maniNota}),
+    ];
+    maniRows.forEach(r=>{
+      if (!state.facturacion.some(x=>x.cliente===r.cliente && x.concepto===r.concepto)) state.facturacion.push(r);
+    });
+    state.nextId = Math.max(state.nextId || 100, 600);
+    state.seedVersion = 6;
+  }
+
+  if (state.seedVersion < 7){
+    // Fechas de etapa no capturadas con precisión histórica: se usa la fecha de carga
+    // como marcador (todas cayeron el mismo día) — edítalas si quieres duración exacta.
+    const hoy = todayStr();
+    const enNegociacion = (cliente,proyecto,monto) => ({
+      id: state.nextId++, cliente, proyecto, monto,
+      solicitud: hoy, datosCliente:'', iniciada:'', validacionEnrique: hoy, liberada: hoy, enviada: hoy,
+      resultado:'pendiente', fechaResultado:'',
+      nota:'Cargada ya en negociación; fechas de etapa aproximadas (mismo día de carga).',
+    });
+    const porCotizar = (cliente,proyecto,nota) => ({
+      id: state.nextId++, cliente, proyecto, monto:'',
+      solicitud: hoy, datosCliente:'', iniciada:'', validacionEnrique:'', liberada:'', enviada:'',
+      resultado:'pendiente', fechaResultado:'', nota,
+    });
+    const cotizSeed = [
+      enNegociacion('BIMBO','Herramienta Slotting', 344174),
+      enNegociacion('FEMSA','Validación básculas', 237367),
+      enNegociacion('FEMSA','Túnel del futuro', 541665),
+      enNegociacion('Nestlé','HUB Querétaro + alcance Purina', 2847000),
+      enNegociacion('Ancona','Capacitación S&OP', 510000),
+      enNegociacion('Santa Clara','UX/UI (solicitado por Dirección)', 200000),
+      enNegociacion('Muratec','Simulation Panther', ''),
+      enNegociacion('BIMBO','Ingeniería de despacho planta NOVABES El Salvador', 123606),
+      enNegociacion('J&J','PROTEUS (demo enviada)', 268324),
+      porCotizar('Nestlé','Reingeniería Terrafértil', 'A espera de información del cliente.'),
+      porCotizar('Refaccionarias California','SELF', 'A espera de información del área interna.'),
+      porCotizar('Refresco','SELF', 'A espera de sesión agendada para el viernes 14 de agosto de 2026, donde se definirán siguientes pasos.'),
+    ];
+    cotizSeed.forEach(r=>{
+      if (!state.cotizaciones.some(x=>x.cliente===r.cliente && x.proyecto===r.proyecto)) state.cotizaciones.push(r);
+    });
+    state.seedVersion = 7;
+  }
+
+  if (state.seedVersion < 8){
+    // Unifica Seguimiento y Tareas administrativas en una sola pestaña de Pendientes.
+    state.pendientes = state.pendientes || [];
+    if (state.seguimiento && state.seguimiento.length){
+      state.seguimiento.forEach(r=>{
+        state.pendientes.push({
+          id: state.nextId++, quien: r.cliente||'', nota: r.tema||'',
+          proximaAccion: r.proximaAccion||'', fecha: r.fechaProximaAccion||'',
+          hecho: !!r.hecho, fechaResuelto: r.fechaResuelto||'',
+        });
+      });
+    }
+    if (state.tareas && state.tareas.length){
+      state.tareas.forEach(r=>{
+        state.pendientes.push({
+          id: state.nextId++, quien:'Interno', nota: r.tarea||'',
+          proximaAccion:'', fecha: r.fechaLimite||'',
+          hecho: !!r.hecho, fechaResuelto: r.fechaHecho||'',
+        });
+      });
+    }
+    delete state.seguimiento;
+    delete state.tareas;
+    state.seedVersion = 8;
+  }
+
+  if (state.seedVersion < 9){
+    const addPend = (quien, nota) => ({ id: state.nextId++, quien, nota, proximaAccion:'', fecha:'', hecho:false, fechaResuelto:'' });
+    const pendSeed = [
+      addPend('Industria Mart', 'Nuevo cliente / prospecto.'),
+      addPend('Industria Mart', 'Leer la información que compartieron en LinkedIn para darnos de alta como proveedor.'),
+      addPend('Enrique', 'Enviar correo con el HTML del embudo comercial actualizado a hoy y el HTML de panorama anual con cortes por trimestre.'),
+      addPend('Enrique', 'Recordarle y asegurarme de que mande la información que solicitó Global para SELF.'),
+      addPend('Apex — Carlos', 'Revisar si realizó el assessment de transporte que se le envió, para ver si se le libera otro.'),
+      addPend('Kayzer', 'Enviar información.'),
+      addPend('Italpasta', 'Buscar / dar seguimiento.'),
+      addPend('Pintumex', 'Buscar / dar seguimiento.'),
+    ];
+    pendSeed.forEach(r=>{
+      if (!state.pendientes.some(x=>x.quien===r.quien && x.nota===r.nota)) state.pendientes.push(r);
+    });
+    state.seedVersion = 9;
+  }
+
+  if (state.seedVersion < 10){
+    // Rediseño de Comisiones: proyecto, % de comisión, monto comisionable, monto facturado, pagada.
+    state.comisiones.forEach(r=>{
+      if (r.porcentaje===undefined){
+        r.montoComisionable = r.montoVenta!=null ? r.montoVenta : '';
+        r.porcentaje = (r.montoVenta && r.comision) ? Math.round((r.comision/r.montoVenta)*10000)/100 : '';
+        r.montoFacturado = r.comision!=null ? r.comision : '';
+        delete r.cliente; delete r.montoVenta; delete r.comision;
+        delete r.facturaEnviada; delete r.fechaFacturaEnviada;
+      }
+    });
+    state.seedVersion = 10;
+  }
+
+  if (state.seedVersion < 11){
+    // Se vuelve a agregar Cliente en Comisiones, ahora antes del nombre del proyecto.
+    state.comisiones.forEach(r=>{ if (r.cliente===undefined) r.cliente = ''; });
+    state.seedVersion = 11;
+  }
+
+  if (state.seedVersion < 12){
+    // Monto facturado en Comisiones ahora se calcula solo (comisionable + IVA), ya no se captura.
+    state.comisiones.forEach(r=>{ delete r.montoFacturado; });
+    state.seedVersion = 12;
+  }
+
+  if (state.seedVersion < 13){
+    const mkCom = (cliente,proyecto,porcentaje,montoComisionable,opts) => {
+      opts = opts || {};
+      return { id: state.nextId++, cliente, proyecto, porcentaje, montoComisionable,
+        pagada: !!opts.pagada, fechaPagada: opts.fechaPagada || '' };
+    };
+    const comSeed = [
+      mkCom('Maulec','Universidad Logística 4.0',15,35005,{pagada:true,fechaPagada:'2026-04-28'}),
+      mkCom('ABI','Transporte Colombia',3,8281,{pagada:true,fechaPagada:'2026-05-30'}),
+      mkCom('FEMSA','Simulación Coatepec',15,14362,{pagada:true,fechaPagada:'2026-05-30'}),
+    ];
+    comSeed.forEach(r=>{
+      if (!state.comisiones.some(x=>x.cliente===r.cliente && x.proyecto===r.proyecto)) state.comisiones.push(r);
+    });
+    state.nextId = Math.max(state.nextId || 100, 800);
+    state.seedVersion = 13;
+  }
+
+  if (state.seedVersion < 14){
+    const addPend2 = (quien, nota, fecha) => ({ id: state.nextId++, quien, nota, proximaAccion:'', fecha: fecha||'', hecho:false, fechaResuelto:'' });
+    const hoy = todayStr();
+    const pendSeed2 = [
+      addPend2('Ale Trujillo', 'Demo Refresco — revisar avance.'),
+      addPend2('Ale Trujillo', 'Jumex — revisar avance.'),
+      addPend2('Gloria', 'Dashboard SELF — agendar sesión, falta ponerle hora.'),
+      addPend2('Refaccionarias California', 'Realizar cotización de capacitación.'),
+      addPend2('Nestlé', 'Junta hoy 2:00 pm — preguntar por la factura de Perfilamiento.', hoy),
+      addPend2('PINFRA', 'Agregar a Griselda al embudo comercial.'),
+      addPend2('Interno', 'Revisar lo de LinkedIn Premium.'),
+      addPend2('J&J', 'Dar de alta en el banco.'),
+      addPend2('Personal', 'Hablar al hotel.'),
+      addPend2('Personal', 'Recoger jeans en La Costu.'),
+      addPend2('Personal', 'Ir a firmar con Mario, 6:30 pm.'),
+      addPend2('Personal', 'Hablarle a mi tía Liz y hacer el documento para Sonia.'),
+    ];
+    pendSeed2.forEach(r=>{
+      if (!state.pendientes.some(x=>x.quien===r.quien && x.nota===r.nota)) state.pendientes.push(r);
+    });
+    state.seedVersion = 14;
+  }
+
+  if (state.seedVersion < 15){
+    // Corrección: "alta JJ - Banco" en realidad eran dos pendientes distintos, uno de trabajo y uno personal.
+    state.pendientes = state.pendientes.filter(r=>!(r.quien==='J&J' && r.nota==='Dar de alta en el banco.'));
+    const fix15 = [
+      { id: state.nextId++, quien:'J&J', nota:'Dar de alta como proveedor de Johnson & Johnson.', proximaAccion:'', fecha:'', hecho:false, fechaResuelto:'' },
+      { id: state.nextId++, quien:'Personal', nota:'Ir al banco con mi hermana.', proximaAccion:'', fecha:'', hecho:false, fechaResuelto:'' },
+    ];
+    fix15.forEach(r=>{
+      if (!state.pendientes.some(x=>x.quien===r.quien && x.nota===r.nota)) state.pendientes.push(r);
+    });
+    state.seedVersion = 15;
+  }
+
+  if (state.seedVersion < 16){
+    // Lo personal se muda a un tablero aparte (Pendientes Personales.html) — se quita de aquí.
+    state.pendientes = state.pendientes.filter(r=>r.quien!=='Personal');
+    state.seedVersion = 16;
+  }
+
+  // Siempre normaliza cualquier fila que siga en el formato viejo (facturado/cobrado)
+  // hacia el esquema actual (solicitada/enviada/pagada) — corre en cada carga, no solo una vez,
+  // para que nunca se rompa aunque un mkFact futuro siga usando la forma vieja por comodidad.
+  state.facturacion.forEach(r=>{
+    if (r.solicitada===undefined){
+      r.solicitada = !!r.facturado;
+      r.fechaSolicitada = r.fechaFacturado || '';
+      r.enviada = !!r.facturado;
+      r.fechaEnviada = r.fechaFacturado || '';
+      r.pagada = !!r.cobrado;
+      r.fechaPagada = r.fechaCobrado || '';
+      r.numeroFactura = r.numeroFactura || '';
+      delete r.facturado; delete r.fechaFacturado; delete r.cobrado; delete r.fechaCobrado;
+    }
+  });
+
+  saveState();
+}
+migrateSeeds();
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtMoney(v){ if (v===''||v==null||isNaN(v)) return '—'; return '$' + Number(v).toLocaleString('es-MX',{maximumFractionDigits:0}); }
+function fmtMonth(ym){ if(!ym) return '—'; const [y,m]=ym.split('-'); const mi=parseInt(m,10)-1; if(mi<0||mi>11) return ym; return MESES[mi]+'-'+y.slice(2); }
+function fmtDate(d){ if(!d) return '—'; const [y,m,day]=d.split('-'); return day+'/'+m+'/'+y.slice(2); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function todayMonth(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function dateOffsetStr(days){ const d=new Date(); d.setDate(d.getDate()+days); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function diffDays(d1,d2){ if(!d1||!d2) return null; return Math.round((new Date(d2)-new Date(d1))/86400000); }
+
+// ── SECTION CONFIG (generic CRUD sections) ─────────────────────────────────
+const SECTIONS = {
+  facturacion: { title:'Facturación', proyectoModal:true, groupBy: r => (r.cliente||'(sin cliente)') + (r.proyecto ? ' — '+r.proyecto : ''), fields:[
+    {key:'cliente', label:'Cliente', type:'text', required:true},
+    {key:'proyecto', label:'Proyecto', type:'text'},
+    {key:'concepto', label:'Concepto / Hito', type:'text', required:true},
+    {key:'monto', label:'Monto', type:'number'},
+    {key:'mesFactura', label:'Mes factura (plan)', type:'month', overdueIf:'enviada'},
+    {key:'mesCobro', label:'Mes cobro (plan)', type:'month'},
+    {key:'solicitada', label:'Solicitada', type:'checkbox', dateKey:'fechaSolicitada'},
+    {key:'enviada', label:'Enviada', type:'checkbox', dateKey:'fechaEnviada', extraKey:'numeroFactura', extraLabel:'No. factura'},
+    {key:'pagada', label:'Pagada', type:'checkbox', dateKey:'fechaPagada'},
+    {key:'nota', label:'Nota', type:'text'},
+  ]},
+  pendientes: { title:'Pendientes administrativos y seguimiento a clientes', groupBy:'quien', hideWhenDone:'hecho', fields:[
+    {key:'quien', label:'¿Con quién?', type:'text', required:true},
+    {key:'nota', label:'Pendiente / Nota', type:'text', required:true},
+    {key:'proximaAccion', label:'Próxima acción', type:'text'},
+    {key:'fecha', label:'Fecha', type:'date', overdueIf:'hecho'},
+    {key:'hecho', label:'Resuelto', type:'checkbox', dateKey:'fechaResuelto'},
+  ]},
+  comisiones: { title:'Comisiones', groupBy:'cliente', fields:[
+    {key:'cliente', label:'Cliente', type:'text', required:true},
+    {key:'proyecto', label:'Nombre del proyecto', type:'text', required:true},
+    {key:'porcentaje', label:'% de comisión', type:'number'},
+    {key:'montoComisionable', label:'Monto comisionable', type:'number'},
+    {key:'montoFacturadoIVA', label:'Monto facturado (+IVA)', type:'computed', compute:r=>(Number(r.montoComisionable)||0)*1.16},
+    {key:'pagada', label:'Pagada', type:'checkbox', dateKey:'fechaPagada'},
+  ]},
+};
+
+const TABS = [
+  {key:'resumen', label:'Resumen'},
+  {key:'facturacion', label:'Facturación'},
+  {key:'cotizaciones', label:'Cotizaciones'},
+  {key:'pendientes', label:'Pendientes'},
+  {key:'comisiones', label:'Comisiones'},
+];
+
+function buildTabs(){
+  document.getElementById('tabs').innerHTML = TABS.map(t =>
+    `<button data-tab="${t.key}" onclick="switchTab('${t.key}')">${t.label}</button>`).join('');
+}
+function switchTab(key){
+  TABS.forEach(t=>{
+    document.getElementById('section-'+t.key).classList.toggle('active', t.key===key);
+  });
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===key));
+  renderAll();
+}
+
+// ── GENERIC SECTION RENDER ───────────────────────────────────────────────
+let searchQuery = {};
+function groupByField(rows, field){
+  const g = {};
+  rows.forEach(r=>{
+    const k = typeof field==='function' ? field(r) : (r[field]||'(sin cliente)');
+    (g[k]=g[k]||[]).push(r);
+  });
+  return g;
+}
+function rowMatchesSearch(cfg,row,q){
+  if (!q) return true;
+  q = q.toLowerCase();
+  return cfg.fields.some(f => (f.type==='text') && String(row[f.key]||'').toLowerCase().includes(q));
+}
+function isOverdueField(f,row){
+  if (!f.overdueIf) return false;
+  if (row[f.overdueIf]) return false;
+  const val = row[f.key];
+  if (!val) return false;
+  if (f.type==='month') return val < todayMonth();
+  if (f.type==='date') return val < todayStr();
+  return false;
+}
+function renderCell(f,row,sectionKey){
+  if (f.type==='checkbox'){
+    const dateKey = f.dateKey;
+    const dateTxt = row[dateKey] ? fmtDate(row[dateKey]) : '';
+    const extraHtml = f.extraKey ? `<input type="text" class="mini-input" placeholder="${esc(f.extraLabel||'')}" value="${esc(row[f.extraKey]||'')}" onchange="updateExtraField('${sectionKey}',${row.id},'${f.extraKey}',this.value)">` : '';
+    return `<div style="display:flex;flex-direction:column;gap:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" ${row[f.key]?'checked':''} onchange="toggleCheckbox('${sectionKey}',${row.id},'${f.key}','${dateKey}')">
+        <span class="muted" style="font-size:11px">${dateTxt}</span>
+      </label>
+      ${extraHtml}
+    </div>`;
+  }
+  let display;
+  if (f.type==='computed') display = fmtMoney(f.compute(row));
+  else if (f.type==='number') display = fmtMoney(row[f.key]);
+  else if (f.type==='month') display = fmtMonth(row[f.key]);
+  else if (f.type==='date') display = fmtDate(row[f.key]);
+  else display = esc(row[f.key]) || '—';
+  const cls = isOverdueField(f,row) ? 'overdue' : '';
+  return `<span class="${cls}">${display}</span>`;
+}
+let showDoneSection = {};
+function toggleShowDone(key){
+  showDoneSection[key] = !showDoneSection[key];
+  renderGenericSection(key);
+}
+let collapsedGroups = {};
+function toggleGroupCollapse(key, group){
+  const k = key+'::'+group;
+  collapsedGroups[k] = !collapsedGroups[k];
+  renderGenericSection(key);
+}
+function renderGenericSection(key){
+  const cfg = SECTIONS[key];
+  const container = document.getElementById('section-'+key);
+  const q = searchQuery[key] || '';
+  let rows = state[key].filter(r=>rowMatchesSearch(cfg,r,q));
+  let doneCount = 0;
+  if (cfg.hideWhenDone){
+    doneCount = rows.filter(r=>r[cfg.hideWhenDone]).length;
+    if (!showDoneSection[key]) rows = rows.filter(r=>!r[cfg.hideWhenDone]);
+  }
+  let body = `<div class="section-toolbar">
+      <input type="text" class="search-input" placeholder="Buscar..." value="${esc(q)}" oninput="searchQuery['${key}']=this.value; renderGenericSection('${key}')">
+      ${cfg.hideWhenDone && doneCount ? `<button class="btn btn-ghost" onclick="toggleShowDone('${key}')">${showDoneSection[key]?'Ocultar resueltos':`Ver resueltos (${doneCount})`}</button>` : ''}
+      ${cfg.proyectoModal
+        ? `<button class="btn btn-primary" onclick="openProyectoModal()">+ Proyecto con hitos</button>`
+        : `<button class="btn btn-primary" onclick="openAddModal('${key}')">+ Agregar</button>`}
+    </div>`;
+  if (!rows.length){
+    body += `<div class="empty-state">${cfg.hideWhenDone && doneCount ? 'No hay pendientes abiertos — todo resuelto 🎉' : `Aún no hay registros en ${esc(cfg.title)}. Usa "+ Agregar" para crear el primero.`}</div>`;
+    container.innerHTML = body;
+    return;
+  }
+  const numFields = cfg.fields.filter(f=>f.type==='number');
+  const head = cfg.fields.map(f=>`<th>${esc(f.label)}</th>`).join('') + '<th></th>';
+  let tbody = '';
+  const groups = cfg.groupBy ? groupByField(rows, cfg.groupBy) : {'':rows};
+  Object.keys(groups).sort().forEach(g=>{
+    const collapsed = cfg.groupBy && collapsedGroups[key+'::'+g];
+    if (cfg.groupBy){
+      tbody += `<tr class="group-row" style="cursor:pointer" onclick="toggleGroupCollapse('${key}','${esc(g).replace(/'/g,"\\'")}')">
+        <td colspan="${cfg.fields.length+1}">${collapsed?'▶':'▼'} ${esc(g)} <span class="muted" style="text-transform:none;font-weight:400">(${groups[g].length})</span>
+          ${cfg.proyectoModal ? `<button class="btn btn-ghost btn-sm" style="float:right;text-transform:none;letter-spacing:0" onclick="event.stopPropagation();openProyectoModal(${groups[g][0].id})">+ Hito</button>` : ''}
+        </td>
+      </tr>`;
+    }
+    if (!collapsed){
+      groups[g].forEach(row=>{
+        tbody += '<tr>' + cfg.fields.map(f=>`<td>${renderCell(f,row,key)}</td>`).join('') +
+          `<td class="row-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEditModal('${key}',${row.id})">Editar</button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteRow('${key}',${row.id})">Eliminar</button>
+          </td></tr>`;
+      });
+    }
+    if (cfg.groupBy && numFields.length){
+      tbody += '<tr class="subtotal-row"><td>Subtotal</td>' +
+        cfg.fields.slice(1).map(f=>{
+          if (f.type!=='number') return '<td></td>';
+          const sum = groups[g].reduce((a,r)=>a+(Number(r[f.key])||0),0);
+          return `<td>${fmtMoney(sum)}</td>`;
+        }).join('') + '<td></td></tr>';
+    }
+  });
+  body += `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${tbody}</tbody></table></div>`;
+  container.innerHTML = body;
+}
+
+// ── PROYECTO CON VARIOS HITOS (Facturación) ──────────────────────────────
+function prHitoRowHtml(){
+  return `<div class="hito-row">
+    <input type="text" class="form-input pr-concepto" placeholder="Ej. Hito 1 Diagnóstico">
+    <input type="number" step="0.01" class="form-input pr-pct" placeholder="%" oninput="prFromPct(this)">
+    <input type="number" step="0.01" class="form-input pr-monto" placeholder="Monto" oninput="prSum()">
+    <input type="month" class="form-input pr-mesf">
+    <input type="month" class="form-input pr-mesc">
+    <button class="btn btn-ghost btn-sm" onclick="this.parentNode.remove();prSum()">✕</button>
+  </div>`;
+}
+function prAddHito(){
+  document.getElementById('pr-hitos').insertAdjacentHTML('beforeend', prHitoRowHtml());
+}
+function prFromPct(el){
+  const total = Number(document.getElementById('pr-total').value);
+  const monto = el.parentNode.querySelector('.pr-monto');
+  if (total && el.value!=='') monto.value = Math.round(total*Number(el.value))/100;
+  prSum();
+}
+function prRecalcAll(){
+  document.querySelectorAll('#pr-hitos .pr-pct').forEach(el=>{ if (el.value!=='') prFromPct(el); });
+  prSum();
+}
+function prSum(){
+  const montos = [...document.querySelectorAll('#pr-hitos .pr-monto')].map(e=>Number(e.value)||0);
+  const suma = montos.reduce((a,b)=>a+b,0);
+  const total = Number(document.getElementById('pr-total').value);
+  let txt = `Suma de hitos: ${fmtMoney(suma)} sin IVA`;
+  if (total) txt += total===suma ? ' (cuadra con el total)' : ` (total del proyecto ${fmtMoney(total)}, diferencia ${fmtMoney(total-suma)})`;
+  document.getElementById('pr-suma').textContent = txt;
+}
+function openProyectoModal(refId){
+  const ref = refId ? state.facturacion.find(r=>r.id===refId) : null;
+  document.getElementById('pr-title').textContent = ref ? 'Agregar hitos a este proyecto' : 'Proyecto con hitos';
+  document.getElementById('pr-cliente').value = ref ? ref.cliente : '';
+  document.getElementById('pr-proyecto').value = ref ? (ref.proyecto||'') : '';
+  document.getElementById('pr-nota').value = ref ? (ref.nota||'') : '';
+  document.getElementById('pr-total').value = '';
+  document.getElementById('pr-hitos').innerHTML = prHitoRowHtml();
+  prSum();
+  openModal('modal-proyecto');
+}
+function saveProyectoForm(){
+  const cliente = document.getElementById('pr-cliente').value.trim();
+  const proyecto = document.getElementById('pr-proyecto').value.trim();
+  const nota = document.getElementById('pr-nota').value.trim();
+  if (!cliente || !proyecto){ toast('Falta el cliente o el nombre del proyecto', 'error'); return; }
+  const hitos = [...document.querySelectorAll('#pr-hitos .hito-row')].map(row=>({
+    concepto: row.querySelector('.pr-concepto').value.trim(),
+    monto: row.querySelector('.pr-monto').value,
+    mesFactura: row.querySelector('.pr-mesf').value,
+    mesCobro: row.querySelector('.pr-mesc').value,
+  })).filter(h=>h.concepto || h.monto!=='');
+  if (!hitos.length){ toast('Agrega al menos un hito', 'error'); return; }
+  if (hitos.some(h=>!h.concepto)){ toast('Cada hito necesita un nombre o concepto', 'error'); return; }
+  hitos.forEach(h=>{
+    state.facturacion.push({
+      id: state.nextId++, cliente, proyecto, concepto: h.concepto,
+      monto: h.monto==='' ? '' : Number(h.monto),
+      mesFactura: h.mesFactura, mesCobro: h.mesCobro, numeroFactura:'',
+      solicitada:false, fechaSolicitada:'', enviada:false, fechaEnviada:'', pagada:false, fechaPagada:'',
+      nota,
+    });
+  });
+  saveState();
+  closeModal('modal-proyecto');
+  toast(hitos.length+' hito(s) guardados en '+proyecto, 'success');
+  renderAll();
+}
+
+// ── GENERIC ADD/EDIT MODAL ───────────────────────────────────────────────
+let currentSection = null, currentEditId = null;
+function openAddModal(key){
+  currentSection = key; currentEditId = null;
+  const cfg = SECTIONS[key];
+  document.getElementById('gm-title').textContent = 'Nuevo — ' + cfg.title;
+  document.getElementById('gm-fields').innerHTML = cfg.fields.map(f=>fieldGroupHtml(f,null)).join('');
+  openModal('modal-generic');
+}
+function openEditModal(key,id){
+  currentSection = key; currentEditId = id;
+  const cfg = SECTIONS[key];
+  const row = state[key].find(r=>r.id===id);
+  document.getElementById('gm-title').textContent = 'Editar — ' + cfg.title;
+  document.getElementById('gm-fields').innerHTML = cfg.fields.map(f=>fieldGroupHtml(f,row)).join('');
+  openModal('modal-generic');
+}
+function fieldGroupHtml(f,row){
+  if (f.type==='computed'){
+    return `<div class="form-group"><label class="form-label">${esc(f.label)}</label><div class="muted">${fmtMoney(row?f.compute(row):0)} (se calcula solo)</div></div>`;
+  }
+  const val = row ? row[f.key] : (f.type==='checkbox' ? false : '');
+  if (f.type==='checkbox'){
+    const dateKey = f.dateKey;
+    const dateVal = row ? (row[dateKey]||'') : '';
+    const extraVal = (f.extraKey && row) ? (row[f.extraKey]||'') : '';
+    const extraHtml = f.extraKey ? `
+      <label class="form-label" style="margin-top:8px">${esc(f.extraLabel||'')}</label>
+      <input type="text" id="f_${f.extraKey}" class="form-input" value="${esc(extraVal)}">` : '';
+    return `<div class="form-group">
+      <div class="checkbox-row"><input type="checkbox" id="f_${f.key}" ${val?'checked':''}><label class="form-label" style="margin:0">${esc(f.label)}</label></div>
+      <label class="form-label" style="margin-top:8px">Fecha</label>
+      <input type="date" id="f_${dateKey}" class="form-input" value="${esc(dateVal)}">
+      ${extraHtml}
+    </div>`;
+  }
+  const inputType = f.type==='number' ? 'number' : (f.type==='month' ? 'month' : (f.type==='date' ? 'date' : 'text'));
+  return `<div class="form-group">
+    <label class="form-label">${esc(f.label)}${f.required?' *':''}</label>
+    <input type="${inputType}" id="f_${f.key}" class="form-input" value="${esc(val==null?'':val)}" ${f.type==='number'?'step="0.01"':''}>
+  </div>`;
+}
+function saveGenericForm(){
+  const cfg = SECTIONS[currentSection];
+  const obj = currentEditId ? Object.assign({}, state[currentSection].find(r=>r.id===currentEditId)) : {id: state.nextId++};
+  let missingRequired = false;
+  cfg.fields.forEach(f=>{
+    if (f.type==='computed'){
+      // no-op: se calcula al vuelo desde otros campos, no se guarda ni se lee del formulario.
+    } else if (f.type==='checkbox'){
+      const checked = document.getElementById('f_'+f.key).checked;
+      const dateVal = document.getElementById('f_'+f.dateKey).value;
+      obj[f.key] = checked;
+      obj[f.dateKey] = checked ? (dateVal || todayStr()) : '';
+      if (f.extraKey) obj[f.extraKey] = document.getElementById('f_'+f.extraKey).value.trim();
+    } else {
+      const v = document.getElementById('f_'+f.key).value.trim();
+      if (f.required && !v) missingRequired = true;
+      obj[f.key] = f.type==='number' ? (v===''? '' : Number(v)) : v;
+    }
+  });
+  if (missingRequired){ toast('Falta llenar un campo obligatorio (*)', 'error'); return; }
+  if (currentEditId){
+    const idx = state[currentSection].findIndex(r=>r.id===currentEditId);
+    state[currentSection][idx] = obj;
+  } else {
+    state[currentSection].push(obj);
+  }
+  saveState();
+  closeModal('modal-generic');
+  toast('Guardado correctamente', 'success');
+  renderAll();
+}
+function updateExtraField(key,id,field,value){
+  const row = state[key].find(r=>r.id===id);
+  row[field] = value;
+  saveState();
+}
+function toggleCheckbox(key,id,field,dateField){
+  const row = state[key].find(r=>r.id===id);
+  row[field] = !row[field];
+  row[dateField] = row[field] ? todayStr() : '';
+  saveState();
+  renderGenericSection(key);
+  if (document.getElementById('section-resumen').classList.contains('active')) renderResumen();
+}
+function deleteRow(key,id){
+  if (!confirm('¿Eliminar este registro? No se puede deshacer.')) return;
+  state[key] = state[key].filter(r=>r.id!==id);
+  saveState();
+  renderGenericSection(key);
+}
+
+// ── COTIZACIONES (custom, con fechas por etapa y duración) ───────────────
+const CZ_STAGES = ['solicitud','datosCliente','iniciada','validacionEnrique','liberada','enviada'];
+const CZ_STAGE_LABELS = {solicitud:'Solicitud', datosCliente:'Datos cliente', iniciada:'Iniciada', validacionEnrique:'→ Enrique', liberada:'Liberada', enviada:'Enviada'};
+let cotizSearch = '';
+function cotizRowHtml(row){
+  const cells = [esc(row.cliente)||'—', esc(row.proyecto)||'—', fmtMoney(row.monto)];
+  CZ_STAGES.forEach(s=>{
+    cells.push(`<span>${fmtDate(row[s])}</span>`);
+  });
+  let resultadoTag = row.resultado==='aceptada' ? '<span style="color:var(--success)">Aceptada</span>'
+    : row.resultado==='rechazada' ? '<span style="color:var(--danger)">Rechazada</span>'
+    : '<span class="muted">Pendiente</span>';
+  cells.push(resultadoTag);
+
+  const filled = CZ_STAGES.filter(s=>row[s]);
+  let durationsHtml = '';
+  for (let i=0;i<filled.length-1;i++){
+    const d = diffDays(row[filled[i]], row[filled[i+1]]);
+    durationsHtml += `${CZ_STAGE_LABELS[filled[i]]}→${CZ_STAGE_LABELS[filled[i+1]]}: ${d}d &nbsp; `;
+  }
+  let totalTxt = '—';
+  if (row.solicitud){
+    const endDate = row.enviada || (row.resultado!=='pendiente' && row.fechaResultado) || todayStr();
+    const total = diffDays(row.solicitud, endDate);
+    totalTxt = (row.enviada || row.fechaResultado) ? `${total} días (total)` : `${total} días (en curso)`;
+  }
+  cells.push(`<div>${totalTxt}<div class="cotiz-durations">${durationsHtml}</div></div>`);
+  cells.push(esc(row.nota) || '—');
+
+  return '<tr>' + cells.map(c=>`<td>${c}</td>`).join('') +
+    `<td class="row-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openCotizModal(${row.id})">Editar</button>
+      <button class="btn btn-ghost btn-sm" onclick="deleteCotiz(${row.id})">Eliminar</button>
+    </td></tr>`;
+}
+let cotizEnviadasCollapsed = true;
+function toggleCotizEnviadas(){
+  cotizEnviadasCollapsed = !cotizEnviadasCollapsed;
+  renderCotizaciones();
+}
+function renderCotizaciones(){
+  const container = document.getElementById('section-cotizaciones');
+  let body = `<div class="section-toolbar">
+      <input type="text" class="search-input" placeholder="Buscar cliente o proyecto..." value="${esc(cotizSearch)}" oninput="cotizSearch=this.value; renderCotizaciones()">
+      <button class="btn btn-primary" onclick="openCotizModal()">+ Nueva cotización</button>
+    </div>`;
+  const allRows = state.cotizaciones.filter(r => !cotizSearch ||
+    (r.cliente||'').toLowerCase().includes(cotizSearch.toLowerCase()) ||
+    (r.proyecto||'').toLowerCase().includes(cotizSearch.toLowerCase()));
+  if (!allRows.length){
+    body += '<div class="empty-state">Aún no hay cotizaciones registradas. Usa "+ Nueva cotización" para crear la primera.</div>';
+    container.innerHTML = body;
+    return;
+  }
+  const head = ['Cliente','Proyecto','Monto', ...CZ_STAGES.map(s=>CZ_STAGE_LABELS[s]), 'Resultado', 'Duración', 'Nota'].map(h=>`<th>${h}</th>`).join('') + '<th></th>';
+  const pendientes = allRows.filter(r=>!r.enviada);
+  const enviadas = allRows.filter(r=>r.enviada);
+
+  body += `<h3 style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Pendientes de acción (${pendientes.length})</h3>`;
+  if (!pendientes.length){
+    body += '<div class="empty-state">Nada pendiente por tu lado — todas están enviadas.</div>';
+  } else {
+    body += `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${pendientes.map(cotizRowHtml).join('')}</tbody></table></div>`;
+  }
+
+  body += `<h3 style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:22px 0 8px;cursor:pointer" onclick="toggleCotizEnviadas()">${cotizEnviadasCollapsed?'▶':'▼'} Enviadas / ciclo completado por tu lado (${enviadas.length})</h3>`;
+  if (!cotizEnviadasCollapsed && enviadas.length){
+    body += `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${enviadas.map(cotizRowHtml).join('')}</tbody></table></div>`;
+  }
+
+  container.innerHTML = body;
+}
+let currentCotizId = null;
+function openCotizModal(id){
+  currentCotizId = id || null;
+  const row = id ? state.cotizaciones.find(r=>r.id===id) : {};
+  document.getElementById('cz-title').textContent = id ? 'Editar cotización' : 'Nueva cotización';
+  document.getElementById('cz-cliente').value = row.cliente || '';
+  document.getElementById('cz-proyecto').value = row.proyecto || '';
+  document.getElementById('cz-monto').value = row.monto || '';
+  CZ_STAGES.forEach(s=>{ document.getElementById('cz-'+s).value = row[s] || ''; });
+  document.getElementById('cz-resultado').value = row.resultado || 'pendiente';
+  document.getElementById('cz-fechaResultado').value = row.fechaResultado || '';
+  document.getElementById('cz-nota').value = row.nota || '';
+  openModal('modal-cotiz');
+}
+function saveCotizForm(){
+  const cliente = document.getElementById('cz-cliente').value.trim();
+  const proyecto = document.getElementById('cz-proyecto').value.trim();
+  if (!cliente){ toast('El cliente es obligatorio', 'error'); return; }
+  const obj = currentCotizId ? Object.assign({}, state.cotizaciones.find(r=>r.id===currentCotizId)) : {id: state.nextId++};
+  obj.cliente = cliente;
+  obj.proyecto = proyecto;
+  const montoVal = document.getElementById('cz-monto').value.trim();
+  obj.monto = montoVal === '' ? '' : Number(montoVal);
+  CZ_STAGES.forEach(s=>{ obj[s] = document.getElementById('cz-'+s).value; });
+  obj.resultado = document.getElementById('cz-resultado').value;
+  obj.fechaResultado = document.getElementById('cz-fechaResultado').value;
+  obj.nota = document.getElementById('cz-nota').value.trim();
+  if (currentCotizId){
+    const idx = state.cotizaciones.findIndex(r=>r.id===currentCotizId);
+    state.cotizaciones[idx] = obj;
+  } else {
+    state.cotizaciones.push(obj);
+  }
+  saveState();
+  closeModal('modal-cotiz');
+  toast('Cotización guardada', 'success');
+  renderCotizaciones();
+}
+function deleteCotiz(id){
+  if (!confirm('¿Eliminar esta cotización? No se puede deshacer.')) return;
+  state.cotizaciones = state.cotizaciones.filter(r=>r.id!==id);
+  saveState();
+  renderCotizaciones();
+}
+
+// ── RESUMEN ────────────────────────────────────────────────────────────────
+function renderResumen(){
+  const fact = state.facturacion;
+  const pendienteEnviar = fact.filter(r=>!r.enviada);
+  const porCobrar = fact.filter(r=>r.enviada && !r.pagada);
+  const cotizActivas = state.cotizaciones.filter(r=>r.resultado==='pendiente');
+  const pendientesAbiertos = state.pendientes.filter(r=>!r.hecho);
+  const comisionesPend = state.comisiones.filter(r=>!r.pagada);
+
+  const cards = [
+    {v: pendienteEnviar.length, l:'Pendientes de enviar', sum: pendienteEnviar.reduce((a,r)=>a+(Number(r.monto)||0),0)},
+    {v: porCobrar.length, l:'Por cobrar (ya enviada)', sum: porCobrar.reduce((a,r)=>a+(Number(r.monto)||0),0)},
+    {v: cotizActivas.length, l:'Cotizaciones activas'},
+    {v: pendientesAbiertos.length, l:'Pendientes abiertos'},
+    {v: comisionesPend.length, l:'Comisiones por cobrar (+IVA)', sum: comisionesPend.reduce((a,r)=>a+(Number(r.montoComisionable)||0)*1.16,0)},
+  ];
+  let html = '<div class="cards">' + cards.map(c=>
+    `<div class="card"><div class="v">${c.v}</div><div class="l">${esc(c.l)}${c.sum!=null?' — '+fmtMoney(c.sum):''}</div></div>`
+  ).join('') + '</div>';
+
+  // Atrasados
+  const overdue = [];
+  fact.forEach(r=>{ if(!r.enviada && r.mesFactura && r.mesFactura<todayMonth()) overdue.push({tag:'Por enviar', txt:`${r.cliente} — ${r.concepto} (debía enviarse ${fmtMonth(r.mesFactura)})`, tab:'facturacion'}); });
+  fact.forEach(r=>{ if(r.enviada && !r.pagada && r.mesCobro && r.mesCobro<todayMonth()) overdue.push({tag:'Por cobrar', txt:`${r.cliente} — ${r.concepto} (esperado ${fmtMonth(r.mesCobro)})`, tab:'facturacion'}); });
+  state.pendientes.forEach(r=>{ if(!r.hecho && r.fecha && r.fecha<todayStr()) overdue.push({tag:'Pendiente', txt:`${r.quien} — ${r.nota}`, tab:'pendientes'}); });
+
+  if (overdue.length){
+    html += `<div class="alert-box"><h3>⚠️ Atrasados (${overdue.length})</h3>` +
+      overdue.map(o=>`<div class="alert-item"><div><span class="tag">${esc(o.tag)}</span>${esc(o.txt)}</div><button class="btn btn-ghost btn-sm" onclick="switchTab('${o.tab}')">Ver</button></div>`).join('') +
+      '</div>';
+  }
+
+  // Próximos — recordatorio de lo que toca este mes / próximos 7 días, antes de que se vuelva atrasado
+  const upcoming = [];
+  fact.forEach(r=>{ if(!r.enviada && r.mesFactura===todayMonth()) upcoming.push({tag:'Facturar este mes', txt:`${r.cliente} — ${r.concepto} (${fmtMoney(r.monto)})`, tab:'facturacion'}); });
+  fact.forEach(r=>{ if(r.enviada && !r.pagada && r.mesCobro===todayMonth()) upcoming.push({tag:'Cobro este mes', txt:`${r.cliente} — ${r.concepto} (${fmtMoney(r.monto)})`, tab:'facturacion'}); });
+  const in7 = dateOffsetStr(7);
+  state.pendientes.forEach(r=>{ if(!r.hecho && r.fecha && r.fecha>=todayStr() && r.fecha<=in7) upcoming.push({tag:'Próximos 7 días', txt:`${r.quien} — ${r.nota}`, tab:'pendientes'}); });
+
+  if (upcoming.length){
+    html += `<div class="reminder-box"><h3>📅 Próximos (${upcoming.length})</h3>` +
+      upcoming.map(o=>`<div class="alert-item"><div><span class="tag" style="background:rgba(0,217,220,.12);color:var(--accent)">${esc(o.tag)}</span>${esc(o.txt)}</div><button class="btn btn-ghost btn-sm" onclick="switchTab('${o.tab}')">Ver</button></div>`).join('') +
+      '</div>';
+  }
+
+  document.getElementById('section-resumen').innerHTML = html;
+}
+
+// ── MODAL / TOAST UTILS ──────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('open'); }));
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open')); });
+function toast(msg,type){
+  const el = Object.assign(document.createElement('div'), {className:'toast '+(type||''), textContent:msg});
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+
+// ── BACKUP ────────────────────────────────────────────────────────────────
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'respaldo-tablero-sci-' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importBackup(file){
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!confirm('Esto reemplazará todos los datos actuales con los del respaldo. ¿Continuar?')) return;
+      state = data;
+      saveState();
+      toast('Respaldo importado', 'success');
+      renderAll();
+    } catch(err){ toast('El archivo no es un respaldo válido', 'error'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+function renderAll(){
+  renderResumen();
+  Object.keys(SECTIONS).forEach(renderGenericSection);
+  renderCotizaciones();
+}
+buildTabs();
+switchTab('resumen');
+</script>
+</body>
+</html>
